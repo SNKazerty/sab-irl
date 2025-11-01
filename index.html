@@ -5,21 +5,57 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Steal a Brainrot IRL</title>
 <style>
-  body{font-family:system-ui,Arial;background:#0b0b0b;color:#f4f4f4;margin:0;padding:18px}
-  .wrap{max-width:920px;margin:0 auto}
-  header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
-  h1{font-size:20px;margin:0}
-  .card{background:linear-gradient(180deg,#111,#0b0b0b);border-radius:12px;padding:12px;margin:10px 0;border:1px solid rgba(255,255,255,0.04)}
-  .row{display:flex;justify-content:space-between;align-items:center}
-  .big{font-size:1.1rem;font-weight:800}
-  .small{font-size:0.85rem;color:#bdbdbd}
-  .imgbox{width:120px;height:120px;border-radius:10px;background:#151515;display:flex;align-items:center;justify-content:center;overflow:hidden}
-  button{padding:8px 12px;border-radius:8px;border:0;background:#ff6b6b;color:white;cursor:pointer;font-weight:700}
+  body {
+    font-family: system-ui, Arial;
+    background: #0b0b0b;
+    color: #f4f4f4;
+    margin: 0;
+    padding: 18px;
+  }
+  .wrap { max-width: 920px; margin: 0 auto; }
+  header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  h1 { font-size: 20px; margin: 0; }
+  .card {
+    background: linear-gradient(180deg,#111,#0b0b0b);
+    border-radius: 12px;
+    padding: 12px;
+    margin: 10px 0;
+    border: 1px solid rgba(255,255,255,0.04);
+  }
+  .row { display: flex; justify-content: space-between; align-items: center; }
+  .big { font-size: 1.1rem; font-weight: 800; }
+  .small { font-size: 0.85rem; color: #bdbdbd; }
+  .imgbox {
+    width: 120px;
+    height: 120px;
+    border-radius: 10px;
+    background: #151515;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  button {
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 0;
+    background: #ff6b6b;
+    color: white;
+    cursor: pointer;
+    font-weight: 700;
+  }
+  #catalogModal {
+    max-height: 70vh;
+    overflow-y: auto;
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header><h1>Steal a Brainrot IRL</h1><div class="small">Scan, ajoute, collectionne.</div></header>
+  <header>
+    <h1>Steal a Brainrot IRL</h1>
+    <div class="small">Scan, ajoute, collectionne.</div>
+  </header>
 
   <div class="card" id="scanInfo"></div>
 
@@ -36,32 +72,30 @@
 
   <div id="catalogModal" style="display:none" class="card"></div>
 </div>
+
 <script type="module">
-// Remplace par tes vraies valeurs Supabase
 const SUPABASE_URL = 'https://yghzfxnbxnxmwoqxajdw.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlnaHpmeG5ieG54bXdvcXhhamR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE5NDYzOTQsImV4cCI6MjA3NzUyMjM5NH0.DizNOQOx2ZqgDyVwOuxV1LS0skImeV5irdGaerCiUg4';
 
-import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/module/supabase.js')
-.then(({createClient}) => {
+import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.31.0/dist/supabase.min.js')
+.then(({ createClient }) => {
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  // --- Utils ---
-  function nstr(n) { if(isNaN(n)) return n; return Number(n).toLocaleString('en-US'); }
+  function nstr(n) { return isNaN(n) ? n : Number(n).toLocaleString('en-US'); }
   function saveLocal(items) { localStorage.setItem('brainrot_collection', JSON.stringify(items)); }
   function loadLocal() { try { return JSON.parse(localStorage.getItem('brainrot_collection')||'[]'); } catch(e) { return []; } }
 
-  // --- Render collection ---
   function renderCollection() {
     const items = loadLocal();
     const cont = document.getElementById('collection');
     cont.innerHTML = '';
     let total = 0;
 
-    if(items.length===0) {
+    if(items.length === 0) {
       cont.innerHTML = '<div class="small">Aucun brainrot ajouté — scanne un QR.</div>';
     } else {
       items.forEach(it => {
-        total += Number(it.gain_per_second||0);
+        total += Number(it.gain_per_second || 0);
 
         const node = document.createElement('div');
         node.className = 'row';
@@ -90,7 +124,6 @@ import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/module/supabas
         cont.appendChild(node);
       });
     }
-
     document.getElementById('totalPerSec').innerText = `Total: ${nstr(total)} /s`;
   }
 
@@ -109,14 +142,12 @@ import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/module/supabas
     renderCollection();
   }
 
-  // --- Fetch catalogue ---
   async function fetchCatalog() {
-    const { data, error } = await supabase.from('brainrots').select('*').order('name', {ascending:true});
+    const { data, error } = await supabase.from('brainrots').select('*').order('name', { ascending:true });
     if(error){ console.error(error); return []; }
     return data || [];
   }
 
-  // --- Open catalogue ---
   document.getElementById('openCatalog').addEventListener('click', async () => {
     const list = await fetchCatalog();
     const modal = document.getElementById('catalogModal');
@@ -126,7 +157,6 @@ import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/module/supabas
     list.forEach(it => {
       const d = document.createElement('div');
       d.className = 'card';
-
       const row = document.createElement('div');
       row.className = 'row';
       row.style.display = 'flex';
@@ -162,15 +192,14 @@ import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/module/supabas
     });
 
     const close = document.createElement('div');
-    close.style.marginTop = '6px';
+    close.style.marginTop='6px';
     const closeBtn = document.createElement('button');
-    closeBtn.textContent = 'Fermer';
-    closeBtn.addEventListener('click', () => modal.style.display='none');
+    closeBtn.textContent='Fermer';
+    closeBtn.addEventListener('click',()=>modal.style.display='none');
     close.appendChild(closeBtn);
     modal.appendChild(close);
   });
 
-  // --- On load ---
   (async function onLoad() {
     renderCollection();
     const params = new URLSearchParams(window.location.search);
@@ -194,10 +223,9 @@ import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/module/supabas
           </div>
         </div>
       `;
-
       const addBtn = document.createElement('button');
       addBtn.textContent='Ajouter';
-      addBtn.addEventListener('click', () => addItem(it));
+      addBtn.addEventListener('click',()=>addItem(it));
       info.appendChild(addBtn);
     }
   })();
