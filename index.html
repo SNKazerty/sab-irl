@@ -77,7 +77,7 @@
 const SUPABASE_URL = 'https://yghzfxnbxnxmwoqxajdw.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlnaHpmeG5ieG54bXdvcXhhamR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE5NDYzOTQsImV4cCI6MjA3NzUyMjM5NH0.DizNOQOx2ZqgDyVwOuxV1LS0skImeV5irdGaerCiUg4';
 
-import('https://supabase.com/dashboard/project/yghzfxnbxnxmwoqxajdw/editor/18569?sort=gain_per_second:asc')
+import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js')
 .then(({ createClient }) => {
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -143,8 +143,8 @@ import('https://supabase.com/dashboard/project/yghzfxnbxnxmwoqxajdw/editor/18569
   }
 
   async function fetchCatalog() {
-    const { data, error } = await supabase.from('brainrots').select('*').order('name', { ascending:true });
-    if(error){ console.error(error); return []; }
+    const { data, error } = await supabase.from('Brainrots').select('*').order('name', { ascending:true });
+    if(error){ console.error("Erreur Supabase:", error.message); return []; }
     return data || [];
   }
 
@@ -207,8 +207,12 @@ import('https://supabase.com/dashboard/project/yghzfxnbxnxmwoqxajdw/editor/18569
     if(id) {
       const info = document.getElementById('scanInfo');
       info.innerHTML = '<div class="small">Recherche du brainrot…</div>';
-      const { data, error } = await supabase.from('brainrots').select('*').eq('id', id).limit(1).single();
-      if(error || !data){ info.innerHTML = '<div class="small">Brainrot inconnu</div>'; return; }
+      const { data, error } = await supabase.from('Brainrots').select('*').eq('id', id).single();
+      if(error || !data){
+        info.innerHTML = '<div class="small">Brainrot inconnu</div>';
+        console.error("Erreur Supabase:", error?.message);
+        return;
+      }
 
       const it = data;
       info.innerHTML = `
