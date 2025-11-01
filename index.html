@@ -160,6 +160,8 @@ import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/module/supabas
     renderCollection();
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id');
+    document.getElementById('scanInfo').innerHTML = "ID détecté : " + id;
+    alert("ID détecté : " + id);
     if(id){
       const info = document.getElementById('scanInfo');
       info.innerHTML = '<div class="small">Recherche du brainrot…</div>';
