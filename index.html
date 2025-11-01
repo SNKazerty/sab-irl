@@ -15,6 +15,7 @@
   .small{font-size:0.85rem;color:#bdbdbd}
   .imgbox{width:120px;height:120px;border-radius:10px;background:#151515;display:flex;align-items:center;justify-content:center;overflow:hidden}
   button{padding:8px 12px;border-radius:8px;border:0;background:#ff6b6b;color:white;cursor:pointer;font-weight:700}
+  #catalogModal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);overflow:auto;padding:20px;display:none;transition:0.3s;}
 </style>
 </head>
 <body>
@@ -34,7 +35,7 @@
     <div id="collection" style="margin-top:10px"></div>
   </div>
 
-  <div id="catalogModal" style="display:none" class="card"></div>
+  <div id="catalogModal" class="card"></div>
 </div>
 
 <script type="module">
@@ -62,8 +63,7 @@ import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/module/supabas
     if(items.length===0) cont.innerHTML='<div class="small">Aucun brainrot ajouté — scanne un QR.</div>';
     items.forEach(it=>{
       total+=Number(it.gain_per_second||0);
-      const node=document.createElement('div');
-      node.className='row'; node.style.marginTop='8px';
+      const node=document.createElement('div'); node.className='row'; node.style.marginTop='8px';
 
       const inner=document.createElement('div');
       inner.style.display='flex';
@@ -76,13 +76,9 @@ import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/module/supabas
           <div class="small">${nstr(it.gain_per_second)} /s • ${it.rarity||''}</div>
         </div>
       `;
-      const removeBtn=document.createElement('button');
-      removeBtn.textContent='Retirer';
-      removeBtn.addEventListener('click',()=>removeItem(it.id));
+      const removeBtn=document.createElement('button'); removeBtn.textContent='Retirer'; removeBtn.addEventListener('click',()=>removeItem(it.id));
 
-      node.appendChild(inner);
-      node.appendChild(removeBtn);
-      cont.appendChild(node);
+      node.appendChild(inner); node.appendChild(removeBtn); cont.appendChild(node);
     });
     document.getElementById('totalPerSec').innerText=`Total: ${nstr(total)} /s`;
   }
@@ -102,69 +98,61 @@ import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/module/supabas
     renderCollection();
   }
 
-  document.getElementById('openCatalog').addEventListener('click', async ()=>{
+  async function openCatalog(){
     const list = await fetchCatalog();
     const modal = document.getElementById('catalogModal');
-    modal.innerHTML=''; // reset pour éviter duplication
-    modal.style.display='block';
+    modal.innerHTML=''; modal.style.display='block';
 
-    const title=document.createElement('div');
-    title.style.fontWeight='800'; title.style.marginBottom='8px';
-    title.textContent='Catalogue';
-    modal.appendChild(title);
+    const title = document.createElement('div'); title.style.fontWeight='800'; title.style.marginBottom='8px'; title.textContent='Catalogue'; modal.appendChild(title);
 
     list.forEach(it=>{
-      const d=document.createElement('div'); d.className='card';
-      const row=document.createElement('div'); row.className='row'; row.style.display='flex'; row.style.gap='10px'; row.style.alignItems='center';
+      const d = document.createElement('div'); d.className='card';
+      const row = document.createElement('div'); row.className='row'; row.style.display='flex'; row.style.gap='10px'; row.style.alignItems='center';
 
-      const imgBox=document.createElement('div'); imgBox.className='imgbox';
-      const img=document.createElement('img'); img.src=it.display_image||''; img.style.width='100%'; img.style.height='100%'; img.style.objectFit='cover';
-      img.onerror=()=>img.style.display='none'; imgBox.appendChild(img);
+      const imgBox = document.createElement('div'); imgBox.className='imgbox';
+      const img = document.createElement('img'); img.src = it.display_image||''; img.style.width='100%'; img.style.height='100%'; img.style.objectFit='cover'; img.onerror=()=>img.style.display='none'; imgBox.appendChild(img);
 
-      const info=document.createElement('div'); info.innerHTML=`
-        <div style="font-weight:800">${it.name}</div>
-        <div class="small">${nstr(it.gain_per_second)} /s • ${it.rarity}</div>
-        <div class="small">Prix: ${it.price||'-'}</div>
-      `;
+      const info = document.createElement('div');
+      info.innerHTML=`<div style="font-weight:800">${it.name}</div><div class="small">${nstr(it.gain_per_second)} /s • ${it.rarity}</div><div class="small">Prix: ${it.price||'-'}</div>`;
 
-      const addBtn=document.createElement('button'); addBtn.textContent='Ajouter'; addBtn.addEventListener('click',()=>addItem(it));
+      const addBtn = document.createElement('button'); addBtn.textContent='Ajouter'; addBtn.addEventListener('click',()=>addItem(it));
 
       row.appendChild(imgBox); row.appendChild(info); row.appendChild(addBtn);
       d.appendChild(row); modal.appendChild(d);
     });
 
-    const close=document.createElement('div'); close.style.marginTop='6px';
-    const closeBtn=document.createElement('button'); closeBtn.textContent='Fermer'; closeBtn.addEventListener('click',()=>modal.style.display='none');
+    const close = document.createElement('div'); close.style.marginTop='6px';
+    const closeBtn = document.createElement('button'); closeBtn.textContent='Fermer'; closeBtn.addEventListener('click',()=>modal.style.display='none');
     close.appendChild(closeBtn); modal.appendChild(close);
-  });
+  }
+
+  document.getElementById('openCatalog').addEventListener('click',openCatalog);
 
   (async function onLoad(){
     renderCollection();
-    const params=new URLSearchParams(window.location.search);
-    const id=params.get('id');
-    if(id){
-      const info=document.getElementById('scanInfo');
-      info.innerHTML='<div class="small">Recherche du brainrot…</div>';
-      const { data, error } = await supabase.from('brainrots').select('*').eq('id', id).limit(1).single();
-      if(error || !data){ info.innerHTML='<div class="small">Brainrot inconnu</div>'; return; }
-      const it=data;
-      const container=document.createElement('div'); container.className='row'; container.style.display='flex'; container.style.gap='12px'; container.style.alignItems='center';
-      const imgBox=document.createElement('div'); imgBox.className='imgbox';
-      const img=document.createElement('img'); img.src=it.display_image||''; img.style.width='100%'; img.style.height='100%'; img.style.objectFit='cover'; img.onerror=()=>img.style.display='none';
-      imgBox.appendChild(img);
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+    if(!id) return;
 
-      const infoText=document.createElement('div');
-      infoText.innerHTML=`
-        <div style="font-weight:800">${it.name}</div>
-        <div class="small">${nstr(it.gain_per_second)} /s • ${it.rarity}</div>
-        <div class="small">Prix: ${it.price||'-'}</div>
-      `;
+    const info = document.getElementById('scanInfo');
+    info.innerHTML='<div class="small">Recherche du brainrot…</div>';
+    const { data, error } = await supabase.from('brainrots').select('*').eq('id', id).limit(1).single();
+    if(error || !data){ info.innerHTML='<div class="small">Brainrot inconnu</div>'; return; }
 
-      const addBtn=document.createElement('button'); addBtn.textContent='Ajouter'; addBtn.addEventListener('click',()=>addItem(it));
+    const it = data;
+    const container = document.createElement('div'); container.className='row'; container.style.display='flex'; container.style.gap='12px'; container.style.alignItems='center';
 
-      container.appendChild(imgBox); container.appendChild(infoText); container.appendChild(addBtn);
-      info.innerHTML=''; info.appendChild(container);
-    }
+    const imgBox = document.createElement('div'); imgBox.className='imgbox';
+    const img = document.createElement('img'); img.src=it.display_image||''; img.style.width='100%'; img.style.height='100%'; img.style.objectFit='cover'; img.onerror=()=>img.style.display='none';
+    imgBox.appendChild(img);
+
+    const infoText = document.createElement('div');
+    infoText.innerHTML=`<div style="font-weight:800">${it.name}</div><div class="small">${nstr(it.gain_per_second)} /s • ${it.rarity}</div><div class="small">Prix: ${it.price||'-'}</div>`;
+
+    const addBtn = document.createElement('button'); addBtn.textContent='Ajouter'; addBtn.addEventListener('click',()=>addItem(it));
+
+    container.appendChild(imgBox); container.appendChild(infoText); container.appendChild(addBtn);
+    info.innerHTML=''; info.appendChild(container);
   })();
 });
 </script>
