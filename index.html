@@ -36,109 +36,123 @@
 
   <div id="catalogModal" style="display:none" class="card"></div>
 </div>
-
 <script type="module">
-// Remplace directement ici par tes vrais valeurs Supabase
+// Remplace par tes vraies valeurs Supabase
 const SUPABASE_URL = 'https://yghzfxnbxnxmwoqxajdw.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlnaHpmeG5ieG54bXdvcXhhamR3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE5NDYzOTQsImV4cCI6MjA3NzUyMjM5NH0.DizNOQOx2ZqgDyVwOuxV1LS0skImeV5irdGaerCiUg4';
 
-import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/module/supabase.js').then(({createClient})=>{
+import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/module/supabase.js')
+.then(({createClient}) => {
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  function nstr(n){ if(isNaN(n)) return n; return Number(n).toLocaleString('en-US'); }
-  function saveLocal(items){ localStorage.setItem('brainrot_collection', JSON.stringify(items)); }
-  function loadLocal(){ try{ return JSON.parse(localStorage.getItem('brainrot_collection')||'[]'); }catch(e){return [];} }
+  // --- Utils ---
+  function nstr(n) { if(isNaN(n)) return n; return Number(n).toLocaleString('en-US'); }
+  function saveLocal(items) { localStorage.setItem('brainrot_collection', JSON.stringify(items)); }
+  function loadLocal() { try { return JSON.parse(localStorage.getItem('brainrot_collection')||'[]'); } catch(e) { return []; } }
 
-  async function fetchCatalog(){
-    const { data, error } = await supabase.from('brainrots').select('*').order('name', {ascending: true});
-    if(error){ console.error(error); return []; }
-    return data || [];
-  }
-
-  function renderCollection(){
+  // --- Render collection ---
+  function renderCollection() {
     const items = loadLocal();
     const cont = document.getElementById('collection');
     cont.innerHTML = '';
     let total = 0;
-    if(items.length===0) cont.innerHTML = '<div class="small">Aucun brainrot ajouté — scanne un QR.</div>';
-    items.forEach(it=>{
-      total += Number(it.gain_per_second||0);
-      const node = document.createElement('div');
-      node.className='row';
-      node.style.marginTop='8px';
-      
-      const inner = document.createElement('div');
-      inner.style.display='flex';
-      inner.style.gap='10px';
-      inner.style.alignItems='center';
-      inner.innerHTML = 
-        <div class="imgbox"><img src="${it.display_image||''}" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'"></div>
-        <div>
-          <div style="font-weight:800">${it.name}</div>
-          <div class="small">${nstr(it.gain_per_second)} /s • ${it.rarity||''}</div>
-        </div>
-      ;
-      const removeBtn = document.createElement('button');
-      removeBtn.textContent = 'Retirer';
-      removeBtn.addEventListener('click',()=>removeItem(it.id));
 
-      node.appendChild(inner);
-      node.appendChild(removeBtn);
-      cont.appendChild(node);
-    });
-    document.getElementById('totalPerSec').innerText = Total: ${nstr(total)} /s;
+    if(items.length===0) {
+      cont.innerHTML = '<div class="small">Aucun brainrot ajouté — scanne un QR.</div>';
+    } else {
+      items.forEach(it => {
+        total += Number(it.gain_per_second||0);
+
+        const node = document.createElement('div');
+        node.className = 'row';
+        node.style.marginTop = '8px';
+
+        const inner = document.createElement('div');
+        inner.style.display = 'flex';
+        inner.style.gap = '10px';
+        inner.style.alignItems = 'center';
+        inner.innerHTML = `
+          <div class="imgbox">
+            <img src="${it.display_image||''}" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">
+          </div>
+          <div>
+            <div style="font-weight:800">${it.name}</div>
+            <div class="small">${nstr(it.gain_per_second)} /s • ${it.rarity||''}</div>
+          </div>
+        `;
+
+        const removeBtn = document.createElement('button');
+        removeBtn.textContent = 'Retirer';
+        removeBtn.addEventListener('click', () => removeItem(it.id));
+
+        node.appendChild(inner);
+        node.appendChild(removeBtn);
+        cont.appendChild(node);
+      });
+    }
+
+    document.getElementById('totalPerSec').innerText = `Total: ${nstr(total)} /s`;
   }
 
-  function removeItem(id){
+  function removeItem(id) {
     let items = loadLocal();
-    items = items.filter(it=>it.id!==id);
+    items = items.filter(it => it.id !== id);
     saveLocal(items);
     renderCollection();
   }
 
-  function addItem(obj){
+  function addItem(obj) {
     let items = loadLocal();
-    if(items.find(it=>it.id===obj.id)){ alert('Déjà dans ta collection.'); return; }
+    if(items.find(it => it.id === obj.id)) { alert('Déjà dans ta collection.'); return; }
     items.push(obj);
     saveLocal(items);
     renderCollection();
   }
 
-  document.getElementById('openCatalog').addEventListener('click', async ()=>{
+  // --- Fetch catalogue ---
+  async function fetchCatalog() {
+    const { data, error } = await supabase.from('brainrots').select('*').order('name', {ascending:true});
+    if(error){ console.error(error); return []; }
+    return data || [];
+  }
+
+  // --- Open catalogue ---
+  document.getElementById('openCatalog').addEventListener('click', async () => {
     const list = await fetchCatalog();
     const modal = document.getElementById('catalogModal');
-    modal.style.display='block';
+    modal.style.display = 'block';
     modal.innerHTML = '<div style="font-weight:800;margin-bottom:8px">Catalogue</div>';
 
-    list.forEach(it=>{
+    list.forEach(it => {
       const d = document.createElement('div');
-      d.className='card';
+      d.className = 'card';
+
       const row = document.createElement('div');
-      row.className='row';
-      row.style.display='flex';
-      row.style.gap='10px';
-      row.style.alignItems='center';
+      row.className = 'row';
+      row.style.display = 'flex';
+      row.style.gap = '10px';
+      row.style.alignItems = 'center';
 
       const imgBox = document.createElement('div');
-      imgBox.className='imgbox';
+      imgBox.className = 'imgbox';
       const img = document.createElement('img');
       img.src = it.display_image || '';
-      img.style.width='100%';
-      img.style.height='100%';
-      img.style.objectFit='cover';
-      img.onerror = ()=>img.style.display='none';
+      img.style.width = '100%';
+      img.style.height = '100%';
+      img.style.objectFit = 'cover';
+      img.onerror = () => img.style.display='none';
       imgBox.appendChild(img);
 
       const info = document.createElement('div');
-      info.innerHTML = 
+      info.innerHTML = `
         <div style="font-weight:800">${it.name}</div>
-        <div class="small">${nstr(it.gain_per_second)} /s • ${it.rarity}</div>
+        <div class="small">${nstr(it.gain_per_second)} /s • ${it.rarity||''}</div>
         <div class="small">Prix: ${it.price||'-'}</div>
-      ;
+      `;
 
       const addBtn = document.createElement('button');
       addBtn.textContent = 'Ajouter';
-      addBtn.addEventListener('click',()=>addItem(it));
+      addBtn.addEventListener('click', () => addItem(it));
 
       row.appendChild(imgBox);
       row.appendChild(info);
@@ -148,39 +162,45 @@ import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/module/supabas
     });
 
     const close = document.createElement('div');
-    close.style.marginTop='6px';
+    close.style.marginTop = '6px';
     const closeBtn = document.createElement('button');
     closeBtn.textContent = 'Fermer';
-    closeBtn.addEventListener('click',()=>modal.style.display='none');
+    closeBtn.addEventListener('click', () => modal.style.display='none');
     close.appendChild(closeBtn);
     modal.appendChild(close);
   });
 
-  (async function onLoad(){
+  // --- On load ---
+  (async function onLoad() {
     renderCollection();
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id');
-    if(id){
+    if(id) {
       const info = document.getElementById('scanInfo');
       info.innerHTML = '<div class="small">Recherche du brainrot…</div>';
       const { data, error } = await supabase.from('brainrots').select('*').eq('id', id).limit(1).single();
       if(error || !data){ info.innerHTML = '<div class="small">Brainrot inconnu</div>'; return; }
+
       const it = data;
-      info.innerHTML = <div class="row" style="display:flex;gap:12px;align-items:center">
-        <div class="imgbox"><img src="${it.display_image||''}" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'"></div>
-        <div>
-          <div style="font-weight:800">${it.name}</div>
-          <div class="small">${nstr(it.gain_per_second)} /s • ${it.rarity}</div>
-          <div class="small">Prix: ${it.price||'-'}</div>
+      info.innerHTML = `
+        <div class="row" style="display:flex;gap:12px;align-items:center">
+          <div class="imgbox">
+            <img src="${it.display_image||''}" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">
+          </div>
+          <div>
+            <div style="font-weight:800">${it.name}</div>
+            <div class="small">${nstr(it.gain_per_second)} /s • ${it.rarity||''}</div>
+            <div class="small">Prix: ${it.price||'-'}</div>
+          </div>
         </div>
-      </div>;
+      `;
+
       const addBtn = document.createElement('button');
       addBtn.textContent='Ajouter';
-      addBtn.addEventListener('click',()=>addItem(it));
+      addBtn.addEventListener('click', () => addItem(it));
       info.appendChild(addBtn);
     }
   })();
-
 });
 </script>
 </body>
